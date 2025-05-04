@@ -3,30 +3,30 @@ from tabulate import tabulate
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+DEBUG = False
+
 def cleandf(df):
     # Check for NaN/null values
     print("Null Values Before Cleaning:")
     print(df.isnull().sum())
 
-    # Check for "ERROR" strings (non-numeric)
-    print("\nRows with 'ERROR':")
-    print(df[df.eq("ERROR").any(axis=1)])
-
-    # =================================================================
     # Remove rows with NaN values
     df_cleaned = df.dropna()
     # Verify cleaning
     print("\nNull Values After Cleaning:")
     print(df_cleaned.isnull().sum())
-
     # =================================================================
+
+    # Check for "ERROR" strings (non-numeric)
+    print("\nRows with 'ERROR':")
+    print(df[df.eq("ERROR").any(axis=1)])
     # Remove rows with "ERROR" (if any column contains it)
     df_cleaned = df_cleaned[~df_cleaned.eq("ERROR").any(axis=1)]
 
-    print("\nDataFrame Shape Before:", df.shape)
-    print("DataFrame Shape After:", df_cleaned.shape)
-    
+    print("\nDataFrame Shape Before ERROR removed:", df.shape)
+    print("DataFrame Shape After ERROR removed:", df_cleaned.shape)
     # =================================================================
+
     # TYPOS
     # TODO: populate automatically, map most common val
     # to everything else
@@ -91,8 +91,8 @@ def analyze_simple(df):
     print(f"Blood Oxygen: {df['Blood Oxygen Level (%)'].mean():.1f}%")
 
     # 3. Most common sleep duration (mode)
-    sleep_mode = df['Sleep Duration (hours)'].mode()[0]
-    print(f"Most common sleep duration: {sleep_mode:.1f} hours")
+    sleep_mode = df['Sleep Duration (hours)'].round(2).mode()[0]
+    print(f"Most common sleep duration (rounded): {sleep_mode:.2f} hours")
 
     # 4. Typical stress level (median)
     stress_median = df['Stress Level'].median()
@@ -128,7 +128,8 @@ def visualize(df):
     # sns.barplot(data=df.assign(**{sleep_duration: df[sleep_duration].round(decimal_places)}), 
     #             x=sleep_duration, y=heart_rate)
 
-    sns.barplot(data=df, x=activity_level, y=sleep_duration)
+    sns.barplot(data=df, x=activity_level, y=stress_level)
+    plt.yscale('log')
     plt.show()
     # =================================================================
 
@@ -138,15 +139,16 @@ def visualize(df):
     # =================================================================
 
     # SCATTER PLOT
-    df.plot.scatter(x=sleep_duration, y=stress_level)
+    df.plot.scatter(x=sleep_duration, y=step_count)
     plt.show()
 
-def printdf(df):
-    print(tabulate(df, headers='keys', tablefmt='pretty', showindex=False))
+def printdf(df, force=False):
+    if DEBUG or force:
+        print(tabulate(df, headers='keys', tablefmt='pretty', showindex=False))
 
 def main():
     # Read the CSV file into a DataFrame
-    df = pd.read_csv('Data.csv')  # or use StringIO if working with the text directly
+    df = pd.read_csv('unclean_smartwatch_health_data.csv')  # or use StringIO if working with the text directly
 
     # Pretty print the DataFrame with formatting
     printdf(df)
@@ -169,7 +171,7 @@ def main():
     # checking whether values make sense
     df = check_values(df)
 
-    printdf(df)
+    printdf(df, True)
 
     analyze_simple(df)
     analyze_advanced(df)
